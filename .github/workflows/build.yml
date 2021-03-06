@@ -3,6 +3,9 @@ name: API Service
 on:
   push:
     branches: [master]
+    paths:
+      - .github/workflows/*
+      - Dockerfile
 
 jobs:
   build:
@@ -24,7 +27,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GHCR_SECRET }}
-      - name: Push to GitHub Packages
+      - name: Build & push to GitHub Packages
         uses: docker/build-push-action@v2
         with:
           build-args: LANGUAGE=${{ matrix.lang }}
