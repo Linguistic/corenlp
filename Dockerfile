@@ -1,21 +1,29 @@
-FROM java:jre-alpine
+FROM openjdk:11-jre
 
-MAINTAINER Vineet Verma <vineetverma.it@gmail.com>
+ENV VERSION=4.2.0
 
-RUN apk add --update --no-cache \
-	 unzip \
-	 wget
+ARG LANGUAGE=english
 
-RUN wget http://nlp.stanford.edu/software/stanford-corenlp-full-2018-02-27.zip
-RUN unzip stanford-corenlp-full-2018-02-27.zip && \
-	rm stanford-corenlp-full-2018-02-27.zip
+ENV PROPERTIES=StanfordCoreNLP-${LANGUAGE}.properties
 
-WORKDIR stanford-corenlp-full-2018-02-27
+RUN apt-get update
 
-RUN export CLASSPATH="`find . -name '*.jar'`"
+RUN wget http://nlp.stanford.edu/software/stanford-corenlp-${VERSION}.zip
+
+RUN unzip stanford-corenlp-${VERSION}.zip && rm stanford-corenlp-${VERSION}.zip
+
+WORKDIR stanford-corenlp-${VERSION}
+
+RUN if [ "$LANGUAGE" != "english" ]; then \
+  wget https://nlp.stanford.edu/software/stanford-corenlp-${VERSION}-models-${LANGUAGE}.jar ; \
+  fi
 
 ENV PORT 9000
 
 EXPOSE $PORT
 
-CMD java -cp "*" -mx8g edu.stanford.nlp.pipeline.StanfordCoreNLPServer
+CMD if [ "$LANGUAGE" = "english" ]; then \
+  java -cp "*" -Xmx8g edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000 ; \
+  else \
+  java -cp "*" -Xmx8g edu.stanford.nlp.pipeline.StanfordCoreNLPServer -serverProperties ${PROPERTIES} -port 9000 -timeout 15000 ; \
+  fi
