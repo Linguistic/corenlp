@@ -1,28 +1,33 @@
 FROM openjdk:11-jre
 
-ENV VERSION=4.2.0
-
 ARG LANGUAGE=english
+ARG CORENLP_VERSION=4.2.0
 
-ENV PROPERTIES=StanfordCoreNLP-${LANGUAGE}.properties
+ENV LANGUAGE $LANGUAGE
+ENV PROPERTIES StanfordCoreNLP-${LANGUAGE}.properties
+ENV PORT 9000
 
 RUN apt-get update
+RUN useradd --create-home --shell /bin/bash corenlp
 
-RUN wget http://nlp.stanford.edu/software/stanford-corenlp-${VERSION}.zip
+USER corenlp 
 
-RUN unzip stanford-corenlp-${VERSION}.zip && rm stanford-corenlp-${VERSION}.zip
+WORKDIR /home/corenlp 
 
-WORKDIR stanford-corenlp-${VERSION}
+RUN wget http://nlp.stanford.edu/software/stanford-corenlp-${CORENLP_VERSION}.zip
+RUN unzip stanford-corenlp-${CORENLP_VERSION}.zip && rm stanford-corenlp-${CORENLP_VERSION}.zip
+
+WORKDIR stanford-corenlp-${CORENLP_VERSION}
+
+SHELL ["/bin/bash", "-c"]
 
 RUN if [ "$LANGUAGE" != "english" ]; then \
-  wget https://nlp.stanford.edu/software/stanford-corenlp-${VERSION}-models-${LANGUAGE}.jar ; \
+  wget https://nlp.stanford.edu/software/stanford-corenlp-${CORENLP_VERSION}-models-${LANGUAGE}.jar ; \
   fi
-
-ENV PORT 9000
 
 EXPOSE $PORT
 
-CMD if [ "$LANGUAGE" = "english" ]; then \
+CMD if [ "$LANGUAGE" == "english" ]; then \
   java -cp "*" -Xmx8g edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 15000 ; \
   else \
   java -cp "*" -Xmx8g edu.stanford.nlp.pipeline.StanfordCoreNLPServer -serverProperties ${PROPERTIES} -port 9000 -timeout 15000 ; \
